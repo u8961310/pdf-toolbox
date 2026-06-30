@@ -519,6 +519,48 @@ class App(tk.Tk):
         self._reset_progress()
         self._refresh_status()
 
+    def convert_to_word(self):
+        """將清單中所有 PDF 轉成 Word (.docx)，存到原始資料夾。"""
+        pdf_files = [f for f in self.files if f.get("ftype") == "pdf"]
+        if not pdf_files:
+            messagebox.showwarning(
+                "提示", "清單中沒有 PDF 檔案\n（Word 檔請先點「轉換 Word → PDF」）"
+            )
+            return
+        if not ensure_pdf2docx():
+            messagebox.showerror(
+                "缺少套件",
+                "無法安裝 pdf2docx\n請手動執行：\n\npip install pdf2docx",
+            )
+            return
+
+        from pdf2docx import parse
+
+        total  = len(pdf_files)
+        errors = []
+        for idx, f in enumerate(pdf_files):
+            out_docx = os.path.splitext(f["path"])[0] + ".docx"
+            try:
+                self._set_progress(
+                    idx / total * 100,
+                    f"轉換 Word ({idx + 1}/{total})：{f['name']}",
+                )
+                parse(f["path"], out_docx)
+            except Exception as e:
+                errors.append(f"{f['name']}：{e}")
+
+        self._set_progress(100, f"✓ {total} 個 PDF 轉換完成")
+        self._reset_progress()
+
+        if errors:
+            messagebox.showerror("部分轉換失敗", "\n".join(errors))
+        else:
+            messagebox.showinfo(
+                "轉換完成",
+                f"✓ {len(pdf_files)} 個 PDF 已轉換為 Word\n"
+                f"存放位置：各原始檔所在資料夾",
+            )
+
     def merge(self):
         if not self.files:
             messagebox.showwarning("提示", "請先新增 PDF 檔案")
