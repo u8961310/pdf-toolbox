@@ -199,6 +199,54 @@ class App(tk.Tk):
         self.deiconify()
         self.lift()
         self.focus_force()
+        self._show_disclaimer()
+
+    def _show_disclaimer(self):
+        dlg = tk.Toplevel(self)
+        dlg.title("使用聲明")
+        dlg.resizable(False, False)
+        dlg.configure(bg=SURFACE)
+        dlg.attributes("-topmost", True)
+
+        W, H = 520, 280
+        sw = self.winfo_screenwidth()
+        sh = self.winfo_screenheight()
+        dlg.geometry(f"{W}x{H}+{(sw - W) // 2}+{(sh - H) // 2}")
+
+        dlg.grab_set()
+        dlg.focus_set()
+        dlg.protocol("WM_DELETE_WINDOW", self.destroy)
+
+        pad = ttk.Frame(dlg, padding=(28, 22, 28, 20))
+        pad.pack(fill="both", expand=True)
+
+        ttk.Label(pad, text="⚠  使用聲明",
+                  font=("Segoe UI", 13, "bold"),
+                  foreground=TEXT1, background=SURFACE).pack(anchor="w")
+        ttk.Separator(pad, orient="horizontal").pack(fill="x", pady=(10, 16))
+
+        tk.Label(pad,
+                 text="本軟體禁止台北市私立立人國際中小學使用，\n除非取得著作權人同意。",
+                 bg=SURFACE, fg=DANGER,
+                 font=("Segoe UI", 12, "bold"),
+                 justify="left", wraplength=460).pack(anchor="w")
+
+        tk.Label(pad,
+                 text="© 2026 陳冠廷．著作權所有，未經授權不得於特定機構使用。",
+                 bg=SURFACE, fg=TEXT2,
+                 font=("Segoe UI", 9),
+                 justify="left").pack(anchor="w", pady=(10, 0))
+
+        btn_row = ttk.Frame(pad)
+        btn_row.pack(fill="x", pady=(20, 0))
+        ttk.Button(btn_row, text="關閉程式",
+                   command=self.destroy,
+                   style="Danger.TButton").pack(side="right", padx=(8, 0))
+        ttk.Button(btn_row, text="我了解，繼續使用",
+                   command=dlg.destroy,
+                   style="Primary.TButton").pack(side="right")
+
+        dlg.wait_window()
 
     # ── 樣式 ──────────────────────────────────────────────────────────────────
 
