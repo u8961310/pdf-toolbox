@@ -561,6 +561,56 @@ class App(tk.Tk):
                 f"存放位置：各原始檔所在資料夾",
             )
 
+    def split_pdf(self):
+        """將清單中選取的 PDF 逐頁拆成獨立 PDF 檔案。"""
+        idx = self._sel_idx()
+        if idx is None:
+            messagebox.showwarning("提示", "請先在清單中選取一個 PDF 檔案")
+            return
+        f = self.files[idx]
+        if f.get("ftype") == "word":
+            messagebox.showwarning("提示", "請先將 Word 轉換為 PDF")
+            return
+
+        out_dir = filedialog.askdirectory(title="選擇分割後 PDF 的儲存資料夾")
+        if not out_dir:
+            return
+
+        from pypdf import PdfReader, PdfWriter
+
+        name = f["name"]
+        base = os.path.splitext(name)[0]
+        try:
+            reader = PdfReader(f["path"])
+            total  = len(reader.pages)
+            for i, page in enumerate(reader.pages, 1):
+                writer = PdfWriter()
+                writer.add_page(page)
+                out_path = os.path.join(out_dir, f"{base}_p{i:03d}.pdf")
+                with open(out_path, "wb") as fh:
+                    writer.write(fh)
+                self._set_progress(
+                    i / total * 100,
+                    f"分割第 {i}/{total} 頁：{name}",
+                )
+
+            self._reset_progress()
+            messagebox.showinfo(
+                "分割完成",
+                f"✓ {name} 已分割為 {total} 個 PDF\n\n儲存位置：{out_dir}",
+            )
+        except PermissionError:
+            self._reset_progress()
+            messagebox.showerror(
+                "儲存失敗",
+                f"無法寫入到 {out_dir}\n（請確認資料夾有寫入權限）",
+            )
+        except Exception as e:
+            self._reset_progress()
+            messagebox.showerror("分割失敗", str(e))
+
+        self._refresh_status()
+
     def merge(self):
         if not self.files:
             messagebox.showwarning("提示", "請先新增 PDF 檔案")
