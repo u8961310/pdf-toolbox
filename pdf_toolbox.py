@@ -111,9 +111,75 @@ def docx_to_pdf(docx_path: str, pdf_path: str) -> None:
 WORD_EXTS = {".doc", ".docx"}
 
 
+class SplashScreen(tk.Toplevel):
+    W, H = 480, 240
+
+    def __init__(self, master):
+        super().__init__(master)
+        self.overrideredirect(True)
+        self.attributes("-topmost", True)
+        self.configure(bg=SURFACE)
+        self.config(highlightbackground=BORDER, highlightthickness=1)
+
+        sw = self.winfo_screenwidth()
+        sh = self.winfo_screenheight()
+        self.geometry(f"{self.W}x{self.H}+{(sw - self.W) // 2}+{(sh - self.H) // 2}")
+
+        self._img_ref = None
+        img_path = self._find_asset("splash.png")
+        if img_path:
+            try:
+                raw = tk.PhotoImage(file=img_path)
+                sx = max(1, raw.width() // 200)
+                sy = max(1, raw.height() // 80)
+                factor = max(sx, sy)
+                self._img_ref = raw.subsample(factor) if factor > 1 else raw
+                tk.Label(self, image=self._img_ref, bg=SURFACE).pack(pady=(20, 6))
+            except Exception:
+                self._draw_title()
+        else:
+            self._draw_title()
+
+        self._status_var = tk.StringVar(value="載入中…")
+        tk.Label(self, textvariable=self._status_var, bg=SURFACE, fg=TEXT2,
+                 font=("Segoe UI", 9)).pack()
+
+        self._pvar = tk.DoubleVar(value=0)
+        ttk.Progressbar(
+            self, variable=self._pvar, maximum=100,
+            mode="determinate", length=self.W - 80,
+            style="Horizontal.TProgressbar",
+        ).pack(pady=(10, 0))
+
+        self.update_idletasks()
+        # Tkinter splash 就緒後立刻關掉 PyInstaller 的 bootloader splash
+        try:
+            import pyi_splash  # type: ignore
+            pyi_splash.close()
+        except ImportError:
+            pass
+
+    def _draw_title(self):
+        tk.Label(self, text="PDF 工具箱", bg=SURFACE, fg=TEXT1,
+                 font=("Segoe UI", 18, "bold")).pack(pady=(20, 6))
+
+    @staticmethod
+    def _find_asset(name: str) -> str | None:
+        base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+        path = os.path.join(base, name)
+        return path if os.path.exists(path) else None
+
+    def set_progress(self, pct: float, text: str = ""):
+        self._pvar.set(pct)
+        if text:
+            self._status_var.set(text)
+        self.update_idletasks()
+
+
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
+        self.withdraw()
         self.title("PDF 工具箱")
         self.geometry("800x640")
         self.resizable(True, True)
@@ -121,8 +187,18 @@ class App(tk.Tk):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         self.files: list[dict] = []
+
         self._setup_styles()
+        splash = SplashScreen(self)
+        splash.set_progress(60, "建立介面…")
         self._build_ui()
+        splash.set_progress(100, "完成！")
+        self.after(300, lambda: (splash.destroy(), self._show_main()))
+
+    def _show_main(self):
+        self.deiconify()
+        self.lift()
+        self.focus_force()
 
     # ── 樣式 ──────────────────────────────────────────────────────────────────
 
