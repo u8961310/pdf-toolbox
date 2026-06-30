@@ -16,6 +16,7 @@ except Exception:
 
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
+from tkinterdnd2 import TkinterDnD, DND_FILES
 
 # ── 色票 ──────────────────────────────────────────────────────────────────────
 BG        = "#f1f5f9"
@@ -109,6 +110,25 @@ def docx_to_pdf(docx_path: str, pdf_path: str) -> None:
 
 
 WORD_EXTS = {".doc", ".docx"}
+IMG_EXTS  = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".tif", ".webp"}
+
+
+def imgs_to_pdf(img_paths: list[str], out_path: str) -> None:
+    """把多張圖片依序合成一份 PDF（Pillow）。"""
+    from PIL import Image
+    pages: list[Image.Image] = []
+    for p in img_paths:
+        img = Image.open(p)
+        if img.mode not in ("RGB", "RGBA"):
+            img = img.convert("RGB")
+        elif img.mode == "RGBA":
+            bg = Image.new("RGB", img.size, (255, 255, 255))
+            bg.paste(img, mask=img.split()[3])
+            img = bg
+        pages.append(img)
+    if not pages:
+        raise ValueError("沒有可用的圖片")
+    pages[0].save(out_path, save_all=True, append_images=pages[1:])
 
 
 class SplashScreen(tk.Toplevel):
@@ -176,7 +196,7 @@ class SplashScreen(tk.Toplevel):
         self.update_idletasks()
 
 
-class App(tk.Tk):
+class App(TkinterDnD.Tk):
     def __init__(self):
         super().__init__()
         self.withdraw()
@@ -314,7 +334,7 @@ class App(tk.Tk):
         hdr = ttk.Frame(wrap)
         hdr.grid(row=0, column=0, sticky="ew", pady=(0, 14))
         ttk.Label(hdr, text="PDF 工具箱", style="Title.TLabel").pack(side="left")
-        ttk.Label(hdr, text="   合併 ／ Word 轉 PDF ／ PDF 轉 JPG ／ PDF 轉 Word ／ PDF 分割",
+        ttk.Label(hdr, text="   合併 ／ 圖片→PDF ／ Word→PDF ／ PDF→JPG ／ PDF→Word ／ 分割",
                   style="Sub.TLabel").pack(side="left", pady=(6, 0))
         ttk.Label(hdr, text="© 2026 陳冠廷",
                   style="Sub.TLabel").pack(side="right", pady=(6, 0))
@@ -356,10 +376,18 @@ class App(tk.Tk):
 
         self.empty = tk.Label(
             card,
-            text="尚無檔案\n點擊「＋ 新增檔案」開始\n支援 PDF 與 Word（.docx / .doc）",
+            text="尚無檔案\n點擊「＋ 新增檔案」，或直接拖曳檔案到此區域\n支援 PDF、Word（.docx / .doc）",
             bg=SURFACE, fg="#94a3b8",
             font=("Segoe UI", 11), justify="center",
         )
+
+        # 拖曳進入區域時高亮
+        card.drop_target_register(DND_FILES)
+        card.dnd_bind("<<Drop>>", self._on_drop)
+        card.dnd_bind("<<DragEnter>>", lambda e: card.config(
+            highlightbackground=PRIMARY, highlightthickness=2))
+        card.dnd_bind("<<DragLeave>>", lambda e: card.config(
+            highlightbackground=BORDER, highlightthickness=1))
 
         # Button column
         bc = ttk.Frame(body)
@@ -407,17 +435,26 @@ class App(tk.Tk):
         bar.grid(row=4, column=0, sticky="ew", pady=(10, 0))
         bar.columnconfigure(0, weight=1)
 
-        btn_row = ttk.Frame(bar)
-        btn_row.grid(row=0, column=0, sticky="e", pady=(0, 4))
-        ttk.Button(btn_row, text="轉換 Word → PDF",
+        # 第一行：轉換工具
+        conv_row = ttk.Frame(bar)
+        conv_row.grid(row=0, column=0, sticky="e", pady=(0, 4))
+        ttk.Label(conv_row, text="轉換：", style="Info.TLabel").pack(side="left", padx=(0, 6))
+        ttk.Button(conv_row, text="Word → PDF",
                    command=self.convert_words,
-                   style="Ghost.TButton").pack(side="left", padx=(0, 6))
-        ttk.Button(btn_row, text="PDF → JPG",
+                   style="Ghost.TButton").pack(side="left", padx=(0, 4))
+        ttk.Button(conv_row, text="圖片 → PDF",
+                   command=self.convert_imgs_to_pdf,
+                   style="Ghost.TButton").pack(side="left", padx=(0, 4))
+        ttk.Button(conv_row, text="PDF → JPG",
                    command=self.convert_to_jpg,
-                   style="Green.TButton").pack(side="left", padx=(0, 6))
-        ttk.Button(btn_row, text="PDF → Word",
+                   style="Green.TButton").pack(side="left", padx=(0, 4))
+        ttk.Button(conv_row, text="PDF → Word",
                    command=self.convert_to_word,
-                   style="WordBlue.TButton").pack(side="left", padx=(0, 6))
+                   style="WordBlue.TButton").pack(side="left", padx=(0, 0))
+
+        # 第二行：主操作
+        btn_row = ttk.Frame(bar)
+        btn_row.grid(row=1, column=0, sticky="e", pady=(0, 4))
         ttk.Button(btn_row, text="PDF 分割",
                    command=self.split_pdf,
                    style="Muted.TButton").pack(side="left", padx=(0, 6))
@@ -501,6 +538,80 @@ class App(tk.Tk):
             self.tree.see(kids[idx])
 
     # ── 動作 ──────────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _parse_dnd_paths(data: str) -> list[str]:
+        """解析 tkinterdnd2 回傳的路徑字串（含空格路徑用 {} 包住）。"""
+        paths, i = [], 0
+        data = data.strip()
+        while i < len(data):
+            if data[i] == "{":
+                end = data.index("}", i)
+                paths.append(data[i + 1:end])
+                i = end + 2
+            elif data[i] == " ":
+                i += 1
+            else:
+                end = i
+                while end < len(data) and data[end] not in (" ", "{"):
+                    end += 1
+                paths.append(data[i:end])
+                i = end
+        return [p for p in paths if p]
+
+    def _on_drop(self, event):
+        from pypdf import PdfReader
+        from tkinter import messagebox
+        paths = self._parse_dnd_paths(event.data)
+        for p in paths:
+            ext  = os.path.splitext(p)[1].lower()
+            name = os.path.basename(p)
+            if ext in WORD_EXTS:
+                self.files.append({"path": p, "name": name, "pages": 0, "ftype": "word"})
+            elif ext == ".pdf":
+                try:
+                    pages = len(PdfReader(p).pages)
+                    self.files.append({"path": p, "name": name, "pages": pages, "ftype": "pdf"})
+                except Exception as e:
+                    messagebox.showerror("讀取失敗", f"{name}\n{e}")
+            else:
+                messagebox.showwarning("不支援的格式",
+                    f"{name}\n拖曳區只接受 PDF / Word，圖片請用「圖片→PDF」按鈕。")
+        # 拖曳結束恢復邊框顏色
+        event.widget.config(highlightbackground=BORDER, highlightthickness=1)
+        self._reset_progress()
+        self._refresh_tree()
+
+    def convert_imgs_to_pdf(self):
+        """開對話框選圖片，合成一份 PDF 並儲存到使用者指定位置。"""
+        paths = filedialog.askopenfilenames(
+            title="選擇圖片（可多選，依選取順序排列）",
+            filetypes=[
+                ("圖片檔案", "*.jpg *.jpeg *.png *.bmp *.tiff *.tif *.webp"),
+                ("所有檔案", "*.*"),
+            ],
+        )
+        if not paths:
+            return
+        out = filedialog.asksaveasfilename(
+            title="儲存為 PDF",
+            defaultextension=".pdf",
+            filetypes=[("PDF 檔案", "*.pdf")],
+            initialfile="圖片合併.pdf",
+        )
+        if not out:
+            return
+        total = len(paths)
+        try:
+            for i, p in enumerate(paths, 1):
+                self._set_progress(i / total * 100, f"處理圖片 {i}/{total}：{os.path.basename(p)}")
+            imgs_to_pdf(list(paths), out)
+            self._set_progress(100, f"完成！已儲存 → {os.path.basename(out)}")
+            messagebox.showinfo("完成", f"已將 {total} 張圖片合成 PDF：\n{out}")
+        except Exception as e:
+            messagebox.showerror("轉換失敗", str(e))
+        finally:
+            self._reset_progress()
 
     def add_files(self):
         from pypdf import PdfReader
