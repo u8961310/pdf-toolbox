@@ -65,6 +65,14 @@ def ensure_pymupdf() -> bool:
         return _auto_install("pymupdf")
 
 
+def ensure_pdf2docx() -> bool:
+    try:
+        import pdf2docx  # noqa: F401
+        return True
+    except ImportError:
+        return _auto_install("pdf2docx")
+
+
 def pdf_to_jpgs(pdf_path: str, out_dir: str, dpi: int = 300,
                 on_page=None) -> list[str]:
     """把 PDF 每頁轉成 JPG，on_page(current, total) 用於進度回呼。"""
@@ -161,6 +169,11 @@ class App(tk.Tk):
                     font=("Segoe UI", 10), padding=(12, 7),
                     relief="flat", borderwidth=0)
         s.map("Green.TButton", background=[("active", "#047857")])
+        s.configure("WordBlue.TButton",
+                    background=WORD_BLUE, foreground="white",
+                    font=("Segoe UI", 10), padding=(12, 7),
+                    relief="flat", borderwidth=0)
+        s.map("WordBlue.TButton", background=[("active", "#1e3a8a")])
         s.configure("Horizontal.TProgressbar",
                     troughcolor=BORDER, background=PRIMARY,
                     thickness=10, borderwidth=0, relief="flat")
