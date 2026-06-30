@@ -190,7 +190,7 @@ class App(tk.Tk):
         hdr = ttk.Frame(wrap)
         hdr.grid(row=0, column=0, sticky="ew", pady=(0, 14))
         ttk.Label(hdr, text="PDF 工具箱", style="Title.TLabel").pack(side="left")
-        ttk.Label(hdr, text="   合併 ／ Word 轉 PDF ／ PDF 轉 JPG",
+        ttk.Label(hdr, text="   合併 ／ Word 轉 PDF ／ PDF 轉 JPG ／ PDF 轉 Word ／ PDF 分割",
                   style="Sub.TLabel").pack(side="left", pady=(6, 0))
         ttk.Label(hdr, text="© 2026 陳冠廷",
                   style="Sub.TLabel").pack(side="right", pady=(6, 0))
@@ -278,22 +278,32 @@ class App(tk.Tk):
         self.prog_label = ttk.Label(prog_row, text="", style="Info.TLabel")
         self.prog_label.grid(row=1, column=0, sticky="w", pady=(3, 0))
 
-        # Status + 操作按鈕
+        # Status + 操作按鈕（兩行）
         bar = ttk.Frame(wrap)
         bar.grid(row=4, column=0, sticky="ew", pady=(10, 0))
         bar.columnconfigure(0, weight=1)
+
+        btn_row = ttk.Frame(bar)
+        btn_row.grid(row=0, column=0, sticky="e", pady=(0, 4))
+        ttk.Button(btn_row, text="轉換 Word → PDF",
+                   command=self.convert_words,
+                   style="Ghost.TButton").pack(side="left", padx=(0, 6))
+        ttk.Button(btn_row, text="PDF → JPG",
+                   command=self.convert_to_jpg,
+                   style="Green.TButton").pack(side="left", padx=(0, 6))
+        ttk.Button(btn_row, text="PDF → Word",
+                   command=self.convert_to_word,
+                   style="WordBlue.TButton").pack(side="left", padx=(0, 6))
+        ttk.Button(btn_row, text="PDF 分割",
+                   command=self.split_pdf,
+                   style="Muted.TButton").pack(side="left", padx=(0, 6))
+        ttk.Button(btn_row, text="  合併 PDF  →",
+                   command=self.merge,
+                   style="Primary.TButton").pack(side="left")
+
         self.status_var = tk.StringVar(value="尚未新增任何檔案")
         ttk.Label(bar, textvariable=self.status_var,
-                  style="Info.TLabel").grid(row=0, column=0, sticky="w")
-        ttk.Button(bar, text="轉換 Word → PDF",
-                   command=self.convert_words,
-                   style="Ghost.TButton").grid(row=0, column=1, padx=(0, 8))
-        ttk.Button(bar, text="PDF → JPG",
-                   command=self.convert_to_jpg,
-                   style="Green.TButton").grid(row=0, column=2, padx=(0, 8))
-        ttk.Button(bar, text="  合併 PDF  →",
-                   command=self.merge,
-                   style="Primary.TButton").grid(row=0, column=3)
+                  style="Info.TLabel").grid(row=1, column=0, sticky="w")
 
         self._show_empty()
 
