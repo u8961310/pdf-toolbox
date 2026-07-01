@@ -216,7 +216,7 @@ class App(TkinterDnD.Tk):
         dlg.configure(bg=SURFACE)
         dlg.attributes("-topmost", True)
 
-        W, H = 520, 280
+        W, H = 540, 310
         sw = self.winfo_screenwidth()
         sh = self.winfo_screenheight()
         dlg.geometry(f"{W}x{H}+{(sw - W) // 2}+{(sh - H) // 2}")
@@ -225,34 +225,57 @@ class App(TkinterDnD.Tk):
         dlg.focus_set()
         dlg.protocol("WM_DELETE_WINDOW", self.destroy)
 
-        pad = ttk.Frame(dlg, padding=(28, 22, 28, 20))
+        CJK = "Microsoft JhengHei"
+
+        # 頂部紅色警示條
+        tk.Frame(dlg, bg=DANGER, height=4).pack(fill="x")
+        tk.Frame(dlg, bg="#fef2f2", height=6).pack(fill="x")
+
+        pad = tk.Frame(dlg, bg=SURFACE, padx=28, pady=20)
         pad.pack(fill="both", expand=True)
 
-        ttk.Label(pad, text="⚠  使用聲明",
-                  font=("Segoe UI", 13, "bold"),
-                  foreground=TEXT1, background=SURFACE).pack(anchor="w")
-        ttk.Separator(pad, orient="horizontal").pack(fill="x", pady=(10, 16))
+        # 標題列
+        title_row = tk.Frame(pad, bg=SURFACE)
+        title_row.pack(fill="x", anchor="w")
+        tk.Label(title_row, text="⚠", bg=SURFACE, fg=DANGER,
+                 font=(CJK, 16)).pack(side="left", padx=(0, 10))
+        tk.Label(title_row, text="使用聲明", bg=SURFACE, fg=TEXT1,
+                 font=(CJK, 15, "bold")).pack(side="left")
 
-        tk.Label(pad,
+        tk.Frame(pad, bg=BORDER, height=1).pack(fill="x", pady=(14, 16))
+
+        # 警示文字框
+        warn_box = tk.Frame(pad, bg="#fef2f2",
+                            highlightbackground="#fca5a5", highlightthickness=1)
+        warn_box.pack(fill="x")
+        tk.Label(warn_box,
                  text="本軟體禁止台北市私立立人國際中小學使用，\n除非取得著作權人同意。",
-                 bg=SURFACE, fg=DANGER,
-                 font=("Segoe UI", 12, "bold"),
-                 justify="left", wraplength=460).pack(anchor="w")
+                 bg="#fef2f2", fg="#b91c1c",
+                 font=(CJK, 12, "bold"),
+                 justify="left", padx=14, pady=12).pack(anchor="w")
 
+        # 著作權
         tk.Label(pad,
-                 text="© 2026 陳冠廷．著作權所有，未經授權不得於特定機構使用。",
+                 text="© 2026 陳冠廷 · 著作權所有，未經授權不得於特定機構使用。",
                  bg=SURFACE, fg=TEXT2,
-                 font=("Segoe UI", 9),
-                 justify="left").pack(anchor="w", pady=(10, 0))
+                 font=(CJK, 9),
+                 justify="left").pack(anchor="w", pady=(14, 0))
 
-        btn_row = ttk.Frame(pad)
-        btn_row.pack(fill="x", pady=(20, 0))
-        ttk.Button(btn_row, text="關閉程式",
-                   command=self.destroy,
-                   style="Danger.TButton").pack(side="right", padx=(8, 0))
-        ttk.Button(btn_row, text="我了解，繼續使用",
-                   command=dlg.destroy,
-                   style="Primary.TButton").pack(side="right")
+        # 按鈕列
+        def _btn(parent, text, cmd, bg, hover):
+            b = tk.Button(parent, text=text, command=cmd,
+                          bg=bg, fg="white", relief="flat",
+                          font=(CJK, 10), padx=16, pady=8,
+                          cursor="hand2", activebackground=hover,
+                          activeforeground="white", bd=0)
+            b.bind("<Enter>", lambda _: b.config(bg=hover))
+            b.bind("<Leave>", lambda _: b.config(bg=bg))
+            return b
+
+        btn_row = tk.Frame(pad, bg=SURFACE)
+        btn_row.pack(fill="x", pady=(18, 0))
+        _btn(btn_row, "關閉程式",      self.destroy,  DANGER,   "#dc2626").pack(side="right", padx=(6, 0))
+        _btn(btn_row, "我了解，繼續使用", dlg.destroy, PRIMARY, "#1d4ed8").pack(side="right")
 
         dlg.wait_window()
 
