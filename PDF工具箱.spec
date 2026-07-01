@@ -3,12 +3,18 @@ from PyInstaller.utils.hooks import collect_all
 
 datas = [('splash.png', '.')]
 binaries = []
-hiddenimports = ['win32com.client', 'pywintypes']
+hiddenimports = ['win32com.client', 'pywintypes',
+                 'winrt.windows.media.ocr',
+                 'winrt.windows.globalization',
+                 'winrt.windows.graphics.imaging',
+                 'winrt.windows.storage.streams']
 tmp_ret = collect_all('fitz')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('pdf2docx')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('tkinterdnd2')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_all('winrt')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
