@@ -193,7 +193,8 @@ class App(TkinterDnD.Tk):
         self.resizable(True, True)
         self.configure(bg=BG)
         self.columnconfigure(0, weight=1)
-        self.rowconfigure(0, weight=1)
+        self.rowconfigure(0, weight=0)   # 頂部色條
+        self.rowconfigure(1, weight=1)   # 主內容
         self.files: list[dict] = []
 
         self._setup_styles()
@@ -216,7 +217,7 @@ class App(TkinterDnD.Tk):
         dlg.configure(bg=SURFACE)
         dlg.attributes("-topmost", True)
 
-        W, H = 540, 310
+        W, H = 560, 380
         sw = self.winfo_screenwidth()
         sh = self.winfo_screenheight()
         dlg.geometry(f"{W}x{H}+{(sw - W) // 2}+{(sh - H) // 2}")
@@ -249,10 +250,13 @@ class App(TkinterDnD.Tk):
                             highlightbackground="#fca5a5", highlightthickness=1)
         warn_box.pack(fill="x")
         tk.Label(warn_box,
-                 text="本軟體禁止台北市私立立人國際中小學使用，\n除非取得著作權人同意。",
+                 text="本軟體依使用授權協議提供。茲聲明台北市私立立人國際中小學不在本軟體授權使用人範圍內。"
+                      "任何屬於或代表該機構之人員，在未獲著作權人書面授權前使用本軟體，即構成著作權侵害；"
+                      "著作權人保留依中華民國著作權法第六章規定提起民刑事訴訟之權利。",
                  bg="#fef2f2", fg="#b91c1c",
-                 font=(CJK, 12, "bold"),
-                 justify="left", padx=14, pady=12).pack(anchor="w")
+                 font=(CJK, 10, "bold"),
+                 justify="left", wraplength=480,
+                 padx=14, pady=12).pack(anchor="w", fill="x")
 
         # 著作權
         tk.Label(pad,
@@ -284,15 +288,16 @@ class App(TkinterDnD.Tk):
     def _setup_styles(self):
         s = ttk.Style(self)
         s.theme_use("clam")
-        s.configure(".", background=BG, foreground=TEXT1, font=("Segoe UI", 10))
+        CJK = "Microsoft JhengHei"
+        s.configure(".", background=BG, foreground=TEXT1, font=(CJK, 10))
         s.configure("TFrame",  background=BG)
         s.configure("TLabel",  background=BG, foreground=TEXT1)
         s.configure("Title.TLabel", background=BG, foreground=TEXT1,
-                    font=("Segoe UI", 15, "bold"))
+                    font=(CJK, 15, "bold"))
         s.configure("Sub.TLabel",   background=BG, foreground=TEXT2,
-                    font=("Segoe UI", 9))
+                    font=(CJK, 9))
         s.configure("Info.TLabel",  background=BG, foreground=TEXT2,
-                    font=("Segoe UI", 9))
+                    font=(CJK, 9))
 
         for name, bg, fg, hover_bg in [
             ("Primary", PRIMARY, "white", "#1d4ed8"),
@@ -302,31 +307,31 @@ class App(TkinterDnD.Tk):
         ]:
             s.configure(f"{name}.TButton",
                         background=bg, foreground=fg,
-                        font=("Segoe UI", 10, "bold" if name == "Primary" else "normal"),
+                        font=(CJK, 10, "bold" if name == "Primary" else "normal"),
                         padding=(12, 7), relief="flat", borderwidth=0)
             s.map(f"{name}.TButton", background=[("active", hover_bg)])
 
         s.configure("Treeview",
                     background=SURFACE, foreground=TEXT1,
                     fieldbackground=SURFACE, rowheight=38,
-                    font=("Segoe UI", 10), borderwidth=0, relief="flat")
+                    font=(CJK, 10), borderwidth=0, relief="flat")
         s.configure("Treeview.Heading",
                     background=BG, foreground=TEXT2,
-                    font=("Segoe UI", 9, "bold"), relief="flat", padding=(8, 7))
+                    font=(CJK, 9, "bold"), relief="flat", padding=(8, 7))
         s.map("Treeview",
               background=[("selected", HOVER)],
               foreground=[("selected", TEXT1)])
         s.configure("TCheckbutton", background=BG, foreground=TEXT1,
-                    font=("Segoe UI", 10))
+                    font=(CJK, 10))
         s.configure("TSeparator", background=BORDER)
         s.configure("Green.TButton",
                     background="#059669", foreground="white",
-                    font=("Segoe UI", 10), padding=(12, 7),
+                    font=(CJK, 10), padding=(12, 7),
                     relief="flat", borderwidth=0)
         s.map("Green.TButton", background=[("active", "#047857")])
         s.configure("WordBlue.TButton",
                     background=WORD_BLUE, foreground="white",
-                    font=("Segoe UI", 10), padding=(12, 7),
+                    font=(CJK, 10), padding=(12, 7),
                     relief="flat", borderwidth=0)
         s.map("WordBlue.TButton", background=[("active", "#1e3a8a")])
         s.configure("Horizontal.TProgressbar",
@@ -336,21 +341,31 @@ class App(TkinterDnD.Tk):
     # ── UI 建構 ───────────────────────────────────────────────────────────────
 
     def _build_ui(self):
-        wrap = ttk.Frame(self, padding=(20, 16, 20, 18))
-        wrap.grid(sticky="nsew")
+        CJK = "Microsoft JhengHei"
+
+        # ── 頂部主題色條 ──────────────────────────────────────────────────────
+        tk.Frame(self, bg=PRIMARY, height=3).grid(row=0, column=0, sticky="ew")
+
+        wrap = ttk.Frame(self, padding=(20, 14, 20, 18))
+        wrap.grid(row=1, column=0, sticky="nsew")
         wrap.columnconfigure(0, weight=1)
         wrap.rowconfigure(1, weight=1)
 
-        # Header
-        hdr = ttk.Frame(wrap)
-        hdr.grid(row=0, column=0, sticky="ew", pady=(0, 14))
-        ttk.Label(hdr, text="PDF 工具箱", style="Title.TLabel").pack(side="left")
-        ttk.Label(hdr, text="   合併 ／ 圖片→PDF ／ Word→PDF ／ PDF→JPG ／ PDF→Word ／ 分割",
-                  style="Sub.TLabel").pack(side="left", pady=(6, 0))
-        ttk.Label(hdr, text="© 2026 陳冠廷",
-                  style="Sub.TLabel").pack(side="right", pady=(6, 0))
+        # ── Header 卡片 ───────────────────────────────────────────────────────
+        hdr_card = tk.Frame(wrap, bg=SURFACE,
+                            highlightbackground=BORDER, highlightthickness=1)
+        hdr_card.grid(row=0, column=0, sticky="ew", pady=(0, 14))
+        tk.Frame(hdr_card, bg=PRIMARY, width=4).pack(side="left", fill="y")
+        hdr_inner = tk.Frame(hdr_card, bg=SURFACE, padx=16, pady=11)
+        hdr_inner.pack(side="left", fill="both", expand=True)
+        tk.Label(hdr_inner, text="PDF 工具箱", bg=SURFACE, fg=TEXT1,
+                 font=(CJK, 16, "bold")).pack(side="left")
+        tk.Label(hdr_inner, text="  合併 · 分割 · 格式轉換",
+                 bg=SURFACE, fg=TEXT2, font=(CJK, 9)).pack(side="left", pady=(8, 0))
+        tk.Label(hdr_inner, text="© 2026 陳冠廷",
+                 bg=SURFACE, fg=TEXT2, font=(CJK, 9)).pack(side="right", pady=(8, 0))
 
-        # Content
+        # ── Content ───────────────────────────────────────────────────────────
         body = ttk.Frame(wrap)
         body.grid(row=1, column=0, sticky="nsew")
         body.columnconfigure(0, weight=1)
@@ -387,12 +402,11 @@ class App(TkinterDnD.Tk):
 
         self.empty = tk.Label(
             card,
-            text="尚無檔案\n點擊「＋ 新增檔案」，或直接拖曳檔案到此區域\n支援 PDF、Word（.docx / .doc）",
+            text="📂\n\n尚無檔案\n\n點擊「＋ 新增檔案」或拖曳檔案到此處\nPDF、Word（.docx / .doc）",
             bg=SURFACE, fg="#94a3b8",
-            font=("Segoe UI", 11), justify="center",
+            font=(CJK, 11), justify="center",
         )
 
-        # 拖曳進入區域時高亮
         card.drop_target_register(DND_FILES)
         card.dnd_bind("<<Drop>>", self._on_drop)
         card.dnd_bind("<<DragEnter>>", lambda e: card.config(
@@ -400,23 +414,29 @@ class App(TkinterDnD.Tk):
         card.dnd_bind("<<DragLeave>>", lambda e: card.config(
             highlightbackground=BORDER, highlightthickness=1))
 
-        # Button column
+        # ── 側邊按鈕 ──────────────────────────────────────────────────────────
         bc = ttk.Frame(body)
         bc.grid(row=0, column=1, sticky="n")
+
+        def grp(text):
+            tk.Label(bc, text=text, bg=BG, fg=TEXT2,
+                     font=(CJK, 8)).pack(anchor="w", pady=(0, 4))
 
         def b(text, cmd, style, pady=(0, 6)):
             ttk.Button(bc, text=text, command=cmd,
                        style=style, width=11).pack(fill="x", pady=pady)
 
-        b("＋ 新增檔案", self.add_files,      "Primary.TButton", (0, 8))
-        b("✕ 移除選取", self.remove_selected, "Danger.TButton",  (0, 20))
+        grp("檔案管理")
+        b("＋ 新增檔案", self.add_files,      "Primary.TButton", (0, 6))
+        b("✕ 移除選取", self.remove_selected, "Danger.TButton",  (0, 16))
         ttk.Separator(bc, orient="horizontal").pack(fill="x", pady=(0, 10))
+        grp("排列順序")
         b("↑  上移",   self.move_up,   "Ghost.TButton", (0, 4))
-        b("↓  下移",   self.move_down, "Ghost.TButton", (0, 18))
+        b("↓  下移",   self.move_down, "Ghost.TButton", (0, 16))
         ttk.Separator(bc, orient="horizontal").pack(fill="x", pady=(0, 10))
-        b("清空",      self.clear_all, "Muted.TButton", (0, 0))
+        b("清空全部",  self.clear_all, "Muted.TButton", (0, 0))
 
-        # Options
+        # ── 選項 ──────────────────────────────────────────────────────────────
         opt = ttk.Frame(wrap)
         opt.grid(row=2, column=0, sticky="ew", pady=(12, 0))
         self.var_blank = tk.BooleanVar(value=True)
@@ -424,11 +444,11 @@ class App(TkinterDnD.Tk):
             opt,
             text=" 單數頁結尾補空白頁（讓下一份 PDF 從正面起始，適合雙面列印）",
             variable=self.var_blank, command=self._refresh_status,
-            bg=BG, fg=TEXT1, font=("Segoe UI", 10),
+            bg=BG, fg=TEXT1, font=(CJK, 10),
             activebackground=BG, cursor="hand2",
         ).pack(side="left")
 
-        # 進度條
+        # ── 進度條 ────────────────────────────────────────────────────────────
         prog_row = ttk.Frame(wrap)
         prog_row.grid(row=3, column=0, sticky="ew", pady=(10, 0))
         prog_row.columnconfigure(0, weight=1)
@@ -441,38 +461,38 @@ class App(TkinterDnD.Tk):
         self.prog_label = ttk.Label(prog_row, text="", style="Info.TLabel")
         self.prog_label.grid(row=1, column=0, sticky="w", pady=(3, 0))
 
-        # Status + 操作按鈕（兩行）
+        # ── 底部狀態列 + 操作按鈕 ─────────────────────────────────────────────
         bar = ttk.Frame(wrap)
         bar.grid(row=4, column=0, sticky="ew", pady=(10, 0))
         bar.columnconfigure(0, weight=1)
 
-        # 第一行：轉換工具
-        conv_row = ttk.Frame(bar)
-        conv_row.grid(row=0, column=0, sticky="e", pady=(0, 4))
-        ttk.Label(conv_row, text="轉換：", style="Info.TLabel").pack(side="left", padx=(0, 6))
-        ttk.Button(conv_row, text="Word → PDF",
-                   command=self.convert_words,
-                   style="Ghost.TButton").pack(side="left", padx=(0, 4))
-        ttk.Button(conv_row, text="圖片 → PDF",
-                   command=self.convert_imgs_to_pdf,
-                   style="Ghost.TButton").pack(side="left", padx=(0, 4))
-        ttk.Button(conv_row, text="PDF → JPG",
-                   command=self.convert_to_jpg,
-                   style="Green.TButton").pack(side="left", padx=(0, 4))
-        ttk.Button(conv_row, text="PDF → Word",
-                   command=self.convert_to_word,
-                   style="WordBlue.TButton").pack(side="left", padx=(0, 0))
+        # 右側：格式轉換群組
+        right = ttk.Frame(bar)
+        right.grid(row=0, column=1, rowspan=2, sticky="se")
 
-        # 第二行：主操作
-        btn_row = ttk.Frame(bar)
-        btn_row.grid(row=1, column=0, sticky="e", pady=(0, 4))
-        ttk.Button(btn_row, text="PDF 分割",
+        conv_wrap = tk.Frame(right, bg=BG)
+        conv_wrap.pack(anchor="e", pady=(0, 6))
+        tk.Label(conv_wrap, text="格式轉換", bg=BG, fg=TEXT2,
+                 font=(CJK, 8)).pack(side="left", padx=(0, 8))
+        for text, cmd, style in [
+            ("Word→PDF",  self.convert_words,       "Ghost.TButton"),
+            ("圖片→PDF",  self.convert_imgs_to_pdf, "Ghost.TButton"),
+            ("PDF→JPG",   self.convert_to_jpg,       "Green.TButton"),
+            ("PDF→Word",  self.convert_to_word,      "WordBlue.TButton"),
+        ]:
+            ttk.Button(conv_wrap, text=text, command=cmd,
+                       style=style).pack(side="left", padx=(0, 4))
+
+        main_btns = ttk.Frame(right)
+        main_btns.pack(anchor="e")
+        ttk.Button(main_btns, text="PDF 分割",
                    command=self.split_pdf,
                    style="Muted.TButton").pack(side="left", padx=(0, 6))
-        ttk.Button(btn_row, text="  合併 PDF  →",
+        ttk.Button(main_btns, text="  合併 PDF  →",
                    command=self.merge,
                    style="Primary.TButton").pack(side="left")
 
+        # 左側：狀態文字
         self.status_var = tk.StringVar(value="尚未新增任何檔案")
         ttk.Label(bar, textvariable=self.status_var,
                   style="Info.TLabel").grid(row=1, column=0, sticky="w")
