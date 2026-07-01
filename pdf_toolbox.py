@@ -3,7 +3,6 @@
 
 import ctypes
 import os
-import subprocess
 import sys
 
 try:
@@ -31,23 +30,12 @@ HOVER     = "#dbeafe"
 WORD_BLUE = "#1d4ed8"
 
 
-def _auto_install(pkg: str) -> bool:
-    try:
-        subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", pkg],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        )
-        return True
-    except Exception:
-        return False
-
-
 def ensure_pypdf() -> bool:
     try:
         import pypdf  # noqa: F401
         return True
     except ImportError:
-        return _auto_install("pypdf")
+        return False
 
 
 def ensure_win32com() -> bool:
@@ -55,7 +43,7 @@ def ensure_win32com() -> bool:
         import win32com.client  # noqa: F401
         return True
     except ImportError:
-        return _auto_install("pywin32")
+        return False
 
 
 def ensure_pymupdf() -> bool:
@@ -63,7 +51,7 @@ def ensure_pymupdf() -> bool:
         import fitz  # noqa: F401
         return True
     except ImportError:
-        return _auto_install("pymupdf")
+        return False
 
 
 def ensure_pdf2docx() -> bool:
@@ -71,7 +59,7 @@ def ensure_pdf2docx() -> bool:
         import pdf2docx  # noqa: F401
         return True
     except ImportError:
-        return _auto_install("pdf2docx")
+        return False
 
 
 def pdf_to_jpgs(pdf_path: str, out_dir: str, dpi: int = 300,
